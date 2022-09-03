@@ -66,10 +66,10 @@ void find(char* path, char* target_file) {
         break;
     
     case T_DIR:
-        // if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){   // len(buf) == 512，文件夹长度不能大于512
-        //     printf("ls: path too long\n");
-        //     break;
-        // }
+        if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){   // len(buf) == 512，文件夹长度不能大于512
+            printf("ls: path too long\n");
+            break;
+        }
 
         strcpy(buf, path);
         p = buf + strlen(buf);      // 拓展长度
