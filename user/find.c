@@ -79,7 +79,7 @@ void find(char* path, char* target_file) {
         while (read(fd, &de, sizeof(de)) == sizeof(de)) {
             if (de.inum == 0 || strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0) 
                 continue;
-            printf("Debug: de.name: %s\n", de.name);
+            // printf("Debug: de.name: %s\n", de.name);
             memmove(p, de.name, DIRSIZ);     // 更新p的路径 ---> /a/b ---> /a/b/c
             p[DIRSIZ] = 0;
             find(buf, target_file);
