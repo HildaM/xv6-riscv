@@ -30,28 +30,37 @@ ls(char *path)
   struct dirent de;
   struct stat st;
 
+  // 1. 检测参数
   if((fd = open(path, 0)) < 0){
+    // 检测是否能打开path文件夹
     fprintf(2, "ls: cannot open %s\n", path);
     return;
   }
 
   if(fstat(fd, &st) < 0){
+    // fstat(fd, &st) 通过描述符获取文件信息
+    // 如果无法获取，说明该文件有问题
     fprintf(2, "ls: cannot stat %s\n", path);
     close(fd);
     return;
   }
 
+  // 2. 根据文件的不同状态，选择不同的方法处理
   switch(st.type){
+  // 设备与文件，不能打开，直接显示信息
   case T_DEVICE:
   case T_FILE:
     printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
     break;
 
+  // 只有文件夹才可以打开
   case T_DIR:
-    if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
+    if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){   // len(buf) == 512，文件夹长度不能大于512
       printf("ls: path too long\n");
       break;
     }
+
+    // TODO: 看不懂。。。
     strcpy(buf, path);
     p = buf+strlen(buf);
     *p++ = '/';
