@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
         注意在执行xargs这个命令行的时候，
         最后肯定要按一个回车，这时标准输入最后会有一个回车，所以在EOF前是会有一个回车的！！！
     */
-    args[argc - 1] = arg;   // 空行，相当于回车
+    args[argc - 1] = arg;   // 空行，替换掉回车！
     args[argc] = 0;     // EOF 文件末尾
 
     // Debug for argv
