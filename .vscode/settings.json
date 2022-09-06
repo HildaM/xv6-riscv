@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "user.h": "c",
+        "param.h": "c",
+        "types.h": "c",
+        "syscall.h": "c",
+        "riscv.h": "c",
+        "defs.h": "c",
+        "proc.h": "c",
+        "sysinfo.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}

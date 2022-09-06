@@ -5,6 +5,8 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
+
 
 uint64
 sys_exit(void)
@@ -88,4 +90,38 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+
+// sys_trace 跟踪系统调用
+uint64
+sys_trace(void) {
+  int mask;
+  argint(0, &mask);           // 获取系统调用的编码
+  if (mask < 0) return -1;    // 判断该编码是否正确
+
+  myproc()->mask = mask;   // 设置当前线程的mask
+  return 0;
+}
+
+uint64
+sys_info(void) {
+  struct sysinfo info;
+  uint64 addr;
+  struct proc* p = myproc();
+
+  argaddr(0, &addr);
+  if (addr < 0) return -1;
+
+  // 1. 获取空闲内存
+  info.freemem = free_mem();
+
+  // 2. 查看空闲的线程数
+  info.nproc = nproc_num();
+
+  if (copyout(p->pagetable, addr, (char*)&info, sizeof(info)) < 0) {
+    return -1;
+  }
+
+  return 0;
 }

@@ -146,6 +146,8 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  //p->mask = 0; // 为新添加的 syscall_trace 附上默认值 0（否则初始状态下可能会有垃圾数据）。
+
   return p;
 }
 
@@ -310,8 +312,9 @@ fork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  // 特殊变量的操作都需要加锁进行！！！
+  // acquire(&np->lock);     // ??? 原有的代码时没有这个锁的, 一旦加锁系统就无法启动？？？
   pid = np->pid;
-
   release(&np->lock);
 
   acquire(&wait_lock);
@@ -321,6 +324,9 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+
+
+  np->mask = p->mask;
 
   return pid;
 }
@@ -688,4 +694,19 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+
+// lab 2-2
+int
+nproc_num(void) {
+  int n = 0;
+  struct proc *p = proc;
+  for (int i = 0; i < NPROC; i++) {
+    acquire(&p->lock);
+    if (p[i].state != UNUSED) n++;
+    release(&p->lock);
+  }
+
+  return n;
 }
