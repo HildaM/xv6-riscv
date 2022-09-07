@@ -110,7 +110,7 @@ sys_info(void) {
   uint64 addr;
   struct proc* p = myproc();
 
-  argaddr(0, &addr);
+  argaddr(0, &addr);    // 获取a0寄存器的指针
   if (addr < 0) return -1;
 
   // 1. 获取空闲内存
@@ -119,6 +119,9 @@ sys_info(void) {
   // 2. 查看空闲的线程数
   info.nproc = nproc_num();
 
+  // info数据的在用户空间与内核空间的虚拟内存地址是一样的
+  // 这样我们就能够通过这个一样的虚拟地址，从内核空间中，直接写入到用户空间pagetable中相同的地方
+  // copyout就是在干这件事情！从info地址中，读取sizeof(info)大小的数据，写入到当前线程的pagetable对应的地址处（a0寄存器：addr地址）
   if (copyout(p->pagetable, addr, (char*)&info, sizeof(info)) < 0) {
     return -1;
   }

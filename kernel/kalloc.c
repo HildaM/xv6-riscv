@@ -73,7 +73,7 @@ kalloc(void)
   acquire(&kmem.lock);
   r = kmem.freelist;
   if(r)
-    kmem.freelist = r->next;
+    kmem.freelist = r->next;   // 指针r获取freelist一块空闲的内存后，freelist指针指向后一个空闲内存
   release(&kmem.lock);
 
   if(r)

@@ -146,7 +146,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
-  //p->mask = 0; // 为新添加的 syscall_trace 附上默认值 0（否则初始状态下可能会有垃圾数据）。
+  p->mask = 0; // 为新添加的 syscall_trace 附上默认值 0（否则初始状态下可能会有垃圾数据）。
 
   return p;
 }

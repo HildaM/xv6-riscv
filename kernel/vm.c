@@ -355,7 +355,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    pa0 = walkaddr(pagetable, va0);
+    pa0 = walkaddr(pagetable, va0);   // 输入虚拟地址与对应的页表，返回对应的物理地址
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (dstva - va0);

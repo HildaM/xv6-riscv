@@ -30,6 +30,7 @@ fetchstr(uint64 addr, char *buf, int max)
   return strlen(buf);
 }
 
+// 获取用户线程trap内核之前的寄存器的信息
 static uint64
 argraw(int n)
 {

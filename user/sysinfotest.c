@@ -73,6 +73,8 @@ testmem() {
     printf("FAIL: free mem %d (bytes) instead of %d\n", n, info.freemem);
     exit(1);
   }
+
+  printf("testmem OK\n");
 }
 
 void
@@ -88,6 +90,8 @@ testcall() {
     printf("FAIL: sysinfo succeeded with bad argument\n");
     exit(1);
   }
+
+  printf("testcall OK\n");
 }
 
 void testproc() {
@@ -96,6 +100,7 @@ void testproc() {
   int status;
   int pid;
   
+  // 记录当前的空闲进程数
   sinfo(&info);
   nproc = info.nproc;
 
@@ -104,6 +109,7 @@ void testproc() {
     printf("sysinfotest: fork failed\n");
     exit(1);
   }
+  // 创建子进程，继续判断是否正确
   if(pid == 0){
     sinfo(&info);
     if(info.nproc != nproc+1) {
@@ -112,12 +118,16 @@ void testproc() {
     }
     exit(0);
   }
-  wait(&status);
+  wait(&status);  // 等待子进程结束
+
+  // 判断子进程结束后，空闲进程数是否正常
   sinfo(&info);
   if(info.nproc != nproc) {
       printf("sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc);
       exit(1);
   }
+
+  printf("testproc OK\n");
 }
 
 int
