@@ -107,4 +107,7 @@ struct proc {
 
   // lab 2-1
   int mask;   // 表示当前进程需要跟踪的那些系统调用 sys_trace()
+
+  // lab 3-1
+  struct usyscall *usyscall;
 };

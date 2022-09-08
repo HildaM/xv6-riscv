@@ -1,5 +1,7 @@
 struct stat;
 struct sysinfo;
+struct usyscall;
+
 
 // system calls
 int fork(void);
@@ -42,3 +44,6 @@ void free(void*);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+
+// lab 3-1
+int ugetpid();

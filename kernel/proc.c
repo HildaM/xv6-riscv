@@ -4,6 +4,7 @@
 #include "riscv.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "usyscall.h"
 #include "defs.h"
 
 struct cpu cpus[NCPU];
@@ -132,6 +133,14 @@ found:
     return 0;
   }
 
+  // lab 3-1
+  // Allocate a usyscall page.
+  if ((p->usyscall = (struct usyscall *)kalloc()) == 0) {
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -146,7 +155,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // lab 2-1
   p->mask = 0; // 为新添加的 syscall_trace 附上默认值 0（否则初始状态下可能会有垃圾数据）。
+
+  // lab 3-1
+  p->usyscall->pid = p->pid;
 
   return p;
 }
@@ -160,6 +173,12 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+
+  // lab 3-1
+  if (p->usyscall)
+    kfree((void *)p->usyscall);
+  p->usyscall = 0;
+
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
@@ -171,6 +190,9 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+
+  // lab 2-1
+  p->mask = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -204,6 +226,15 @@ proc_pagetable(struct proc *p)
     return 0;
   }
 
+  // lab 3-1
+  // map the usyscall page just below the trapframe page.
+  if (mappages(pagetable, USYSCALL, PGSIZE, (uint64)(p->usyscall), PTE_R | PTE_U) < 0) {
+    uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+    uvmunmap(pagetable, TRAPFRAME, 1, 0);
+    uvmfree(pagetable, 0);
+    return 0;
+  } 
+
   return pagetable;
 }
 
@@ -214,6 +245,8 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  // lab 3-1
+  uvmunmap(pagetable, USYSCALL, 1, 0);
   uvmfree(pagetable, sz);
 }
 

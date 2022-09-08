@@ -3,6 +3,11 @@
 #include "kernel/fcntl.h"
 #include "user/user.h"
 
+// lab 3-1
+#include "kernel/riscv.h"
+#include "kernel/memlayout.h"
+#include "kernel/usyscall.h"
+
 //
 // wrapper so that it's OK if main() does not call exit().
 //
@@ -144,4 +149,13 @@ void *
 memcpy(void *dst, const void *src, uint n)
 {
   return memmove(dst, src, n);
+}
+
+
+// lab 3-1
+int
+ugetpid()
+{
+  struct usyscall *call = (struct usyscall *) USYSCALL;
+  return call->pid;
 }
