@@ -283,6 +283,7 @@ freewalk(pagetable_t pagetable)
       panic("freewalk: leaf");
     }
   }
+  // 清空该页表的物理内存数据
   kfree((void*)pagetable);
 }
 
@@ -437,3 +438,48 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+
+// lab 3-2
+// 递归输出页表函数
+void
+print_pages(pagetable_t pagetable, int level)
+{
+  //if (level > 3) return 0
+
+  // there are 2^9 = 512 PTEs in a page table.
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = pagetable[i];
+
+    // 参考vm.c中的freewalk的递归代码
+    if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0) {
+      // 当前pte不可读、不可写、不可执行 ---> 当前pte指向下一级页面
+      uint64 child = PTE2PA(pte);
+
+      printf("..");
+      for (int i = 0; i < level - 1; i++) {
+        printf(" ..");
+      }
+      printf("%d: pte %p pa %p\n", i, pte, PTE2PA(pte));
+
+      print_pages((pagetable_t)child, level + 1);
+    }
+    else if (pte & PTE_V) {
+      // 叶子节点
+      printf(".. .. ..%d: pte %p pa %p\n", i, pte, PTE2PA(pte));
+    }
+  }
+}
+
+/*
+  param: pagetable_t
+  result: print given pagetable, including its sub page
+*/
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  print_pages(pagetable, 1);
+}
+
+ 

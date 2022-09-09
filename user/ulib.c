@@ -153,6 +153,7 @@ memcpy(void *dst, const void *src, uint n)
 
 
 // lab 3-1
+// USYSCALL 本质地址，而指针本质也是地址。只要该地址的数据权限不限制，就可以访问！
 int
 ugetpid()
 {

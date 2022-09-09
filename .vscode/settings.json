@@ -8,7 +8,8 @@
         "defs.h": "c",
         "proc.h": "c",
         "sysinfo.h": "c",
-        "memlayout.h": "c"
+        "memlayout.h": "c",
+        "elf.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
