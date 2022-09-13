@@ -104,6 +104,8 @@ sys_trace(void) {
   return 0;
 }
 
+
+// sys_info 返回系统进程部分信息
 uint64
 sys_info(void) {
   struct sysinfo info;
@@ -127,4 +129,26 @@ sys_info(void) {
   }
 
   return 0;
+}
+
+
+// sys_pgaccess 
+uint64
+sys_pgaccess(void)
+{
+  uint64 userpage_ptr;   // 待检测页表起始指针
+  int page_num;          // 待检测页表数量
+  uint64 ans;            // 稍后写入用户的内存地址
+
+  // 获取用户态的参数
+  argaddr(0, &userpage_ptr);
+  if (userpage_ptr < 0) return -1;
+
+  argint(1, &page_num);
+  if (page_num < 0) return -1;
+
+  argaddr(2, &ans);
+  if (ans < 0) return -1;
+
+  return pgaccess((void *)userpage_ptr, page_num, (void *)ans);
 }

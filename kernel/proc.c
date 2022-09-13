@@ -743,3 +743,29 @@ nproc_num(void) {
 
   return n;
 }
+
+// lab 3-3
+uint64 
+pgaccess(void* pg, int page_num, void* store) 
+{
+  // int最大32位。大于32，没有足够的位数进行标记
+  if (page_num > 32) return -1;
+
+  struct proc* p = myproc();
+  if (p == 0) return 1;
+
+  pagetable_t pagetable = p->pagetable;
+  int ans = 0;
+  for (int i = 0; i < page_num; i++) {
+    // 返回指定va下的pte地址
+    pte_t* pte = walk(pagetable, ((uint64)pg) + (uint64)PGSIZE * i, 0);
+
+    if (pte != 0 && ((*pte) & PTE_A)) {
+      ans |= 1 << i;  // ans标记对应的位数
+      *pte ^= PTE_A;  // 清空PTE_A标记
+    }
+  }
+
+  // 将结果返回用户态
+  return copyout(pagetable, (uint64)store, (char*)&ans, sizeof(int));
+}

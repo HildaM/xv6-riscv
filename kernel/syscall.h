@@ -22,3 +22,4 @@
 #define SYS_close  21
 #define SYS_trace  22   // lab 2-1
 #define SYS_sysinfo 23  // lab 2-2
+#define SYS_pgaccess 24 // lab 3-3
