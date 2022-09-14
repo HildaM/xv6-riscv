@@ -327,6 +327,18 @@ sfence_vma()
   asm volatile("sfence.vma zero, zero");
 }
 
+
+// lab 4-2
+// 获取当前 frame pointer(寄存器)
+static inline uint64
+r_fp()
+{
+  uint64 x;
+  asm volatile("mv %0, s0" : "=r" (x) );  // C 内联汇编
+  return x;
+}
+
+
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
 

@@ -170,10 +170,17 @@ syscall(void)
   int num;
   struct proc *p = myproc();
 
-  num = p->trapframe->a7;
+  num = p->trapframe->a7;   // a7寄存器存储着系统调用的参数
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
+    /*
+      这里向trapframe中的a0赋值的原因是：所有的系统调用都有一个返回值，比如write会返回实际写入的字节数，
+      而RISC-V上的C代码的习惯是函数的返回值存储于寄存器a0，
+      所以为了模拟函数的返回，我们将返回值存储在trapframe的a0中。
+      之后，当我们返回到用户空间，trapframe中的a0槽位的数值会写到实际的a0寄存器，
+      Shell会认为a0寄存器中的数值是write系统调用的返回值。
+    */
     p->trapframe->a0 = syscalls[num]();
 
   } else {

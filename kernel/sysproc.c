@@ -56,10 +56,13 @@ sys_sleep(void)
   int n;
   uint ticks0;
 
+  // lab 4-2
+  backtrace();
+
   argint(0, &n);
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
+  while(ticks - ticks0 < n){    // 在n时间内sleep
     if(killed(myproc())){
       release(&tickslock);
       return -1;

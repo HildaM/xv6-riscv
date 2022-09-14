@@ -53,17 +53,30 @@ usertrap(void)
   if(r_scause() == 8){
     // system call
 
+    // 检测是否有其他程序杀掉了当前程序
     if(killed(p))
       exit(-1);
 
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
-    p->trapframe->epc += 4;
+    /*
+      在RISC-V中，存储在SEPC寄存器中的程序计数器，是用户程序中触发trap的指令的地址。
+      但是当我们恢复用户程序时，我们希望在下一条指令恢复，也就是ecall之后的一条指令。
+      所以对于系统调用，我们对于保存的用户程序计数器加4，
+      这样我们会在ecall的下一条指令恢复，而不是重新执行ecall指令。
+    */
+    p->trapframe->epc += 4;   // epc: saved user program counter
 
     // an interrupt will change sepc, scause, and sstatus,
     // so enable only now that we're done with those registers.
+    /*
+      XV6会在处理系统调用的时候使能中断，这样中断可以更快的服务，
+      有些系统调用需要许多时间处理。中断总是会被RISC-V的trap硬件关闭，
+      所以在这个时间点，我们需要显式的打开中断。
+    */
     intr_on();
 
+    // 准备工作完成，执行系统调用
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
@@ -73,6 +86,7 @@ usertrap(void)
     setkilled(p);
   }
 
+  // 再次检测当前进程是否被杀掉
   if(killed(p))
     exit(-1);
 
@@ -97,7 +111,7 @@ usertrapret(void)
   intr_off();
 
   // send syscalls, interrupts, and exceptions to uservec in trampoline.S
-  uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
+  uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);  // 因为内核空间和用户空间关于trampoline page映射相同，所以此处无需对地址做特殊处理
   w_stvec(trampoline_uservec);
 
   // set up trapframe values that uservec will need when

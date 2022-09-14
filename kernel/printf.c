@@ -133,3 +133,16 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+
+
+void
+backtrace(void)
+{
+  uint64 fp = r_fp();
+  while (fp != PGROUNDUP(fp)) {      // “达到栈顶”为退出条件
+    uint64 ra = *(uint64*)(fp - 8);  // return address 
+    printf("%p\n", ra);
+    fp = *(uint64*)(fp - 16);        // previous fp
+  }
+}
