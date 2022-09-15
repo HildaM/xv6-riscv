@@ -91,8 +91,17 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2) { // 时钟中断编号为2
+    if (p->alarm_tks > 0) {
+      p->alarm_tk_elapsed++;    // 距离上次handler执行的时间
+      if (p->alarm_tk_elapsed > p->alarm_tks) {  // 当前已执行的时间超过了规定的时间
+        p->alarm_tk_elapsed = 0;
+        p->trapframe->epc = (uint64)p->alarm_handler;    // 直接改 epc，这样回用户态的时候就会执行地址为 epc 的指令
+      }
+    }
+
     yield();
+  }
 
   usertrapret();
 }

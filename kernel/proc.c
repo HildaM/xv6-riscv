@@ -161,6 +161,11 @@ found:
   // lab 3-1
   p->usyscall->pid = p->pid;
 
+  // lab 4-3 为新增的参数初始化
+  p->alarm_tks = 0;
+  p->alarm_handler = 0;
+  p->alarm_tk_elapsed = 0;
+
   return p;
 }
 
@@ -193,6 +198,11 @@ freeproc(struct proc *p)
 
   // lab 2-1
   p->mask = 0;
+
+  // lab 4-3 释放参数
+  p->alarm_tks = 0;
+  p->alarm_handler = 0;
+  p->alarm_tk_elapsed = 0;
 }
 
 // Create a user page table for a given process, with no user memory,

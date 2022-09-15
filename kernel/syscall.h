@@ -20,6 +20,8 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_trace  22   // lab 2-1
-#define SYS_sysinfo 23  // lab 2-2
-#define SYS_pgaccess 24 // lab 3-3
+#define SYS_trace  22           // lab 2-1
+#define SYS_sysinfo 23          // lab 2-2
+#define SYS_pgaccess 24         // lab 3-3
+#define SYS_sigalarm 25         // lab 4-3
+#define SYS_sigreturn 26        // lab 4-3

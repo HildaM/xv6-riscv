@@ -28,6 +28,9 @@ int uptime(void);
 int trace(int);                                 // lab 2-1
 int sysinfo(struct sysinfo *);                  // lab 2-2
 int pgaccess(void* base, int len, void* mask);  // lab 3-3
+int sigalarm(int ticks, void (*handler)());     // lab 4-3
+int sigreturn(void);                            // lab 4-3
+
 
 // ulib.c
 int stat(const char*, struct stat*);

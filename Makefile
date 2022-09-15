@@ -142,6 +142,7 @@ UPROGS=\
 	$U/_sysinfotest\
 	$U/_pgtbltest\
 	$U/_bttest\
+	$U/_alarmtest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

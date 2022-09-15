@@ -9,7 +9,8 @@
         "proc.h": "c",
         "sysinfo.h": "c",
         "memlayout.h": "c",
-        "elf.h": "c"
+        "elf.h": "c",
+        "spinlock.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

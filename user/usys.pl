@@ -39,3 +39,5 @@ entry("uptime");
 entry("trace");          # lab 2-1
 entry("sysinfo");        # lab 2-2
 entry("pgaccess") ;      # lab 3-3
+entry("sigalarm");       # lab 4-3
+entry("sigreturn");      # lab 4-3

@@ -110,4 +110,9 @@ struct proc {
 
   // lab 3-1
   struct usyscall *usyscall;
+
+  // lab 4-3
+  uint64 alarm_tks;           // 用于记录执行handler的区间，0表示不执行
+  uint64 alarm_tk_elapsed;    // 距离上次handler执行过去的时间
+  uint64 alarm_handler;   // 函数指针 --- 指向一个返回值为void、形参为空的函数(handler函数地址)
 };

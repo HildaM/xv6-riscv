@@ -155,3 +155,33 @@ sys_pgaccess(void)
 
   return pgaccess((void *)userpage_ptr, page_num, (void *)ans);
 }
+
+
+// lab 4-3
+uint64
+sys_sigreturn(void)
+{
+  return 0;
+}
+
+uint64
+sys_sigalarm(void)
+{
+  int ticks;
+  struct proc* p = myproc();
+  uint64 handler;
+
+  // 获取用户态sigalarm函数的两个形参
+  argint(0, &ticks);
+  if (ticks < 0) return -1;
+
+  argaddr(1, &handler);
+  if (handler < 0) return -1;
+
+  // 存储参数
+  p->alarm_tks = ticks;
+  p->alarm_handler = handler;
+  p->alarm_tk_elapsed = 0;
+
+  return 0;
+}
