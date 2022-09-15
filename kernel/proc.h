@@ -100,6 +100,7 @@ struct proc {
   uint64 sz;                   // Size of process memory (bytes)
   pagetable_t pagetable;       // User page table
   struct trapframe *trapframe; // data page for trampoline.S
+  struct trapframe *alarmframe; // 新增备份的trapframe
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
@@ -114,5 +115,6 @@ struct proc {
   // lab 4-3
   uint64 alarm_tks;           // 用于记录执行handler的区间，0表示不执行
   uint64 alarm_tk_elapsed;    // 距离上次handler执行过去的时间
-  uint64 alarm_handler;   // 函数指针 --- 指向一个返回值为void、形参为空的函数(handler函数地址)
+  uint64 alarm_handler;       // 函数指针 --- 指向一个返回值为void、形参为空的函数(handler函数地址)
+  uint64 alarm_state;         // 标记当前handler是否正在执行。1：执行，0：不执行
 };

@@ -161,9 +161,16 @@ sys_pgaccess(void)
 uint64
 sys_sigreturn(void)
 {
+  struct proc *p = myproc();
+  *p->trapframe = *p->alarmframe;   // 恢复环境
+  p->alarm_state = 0;   // handler终止执行
   return 0;
 }
 
+
+// lab 4-3 
+// 每隔ticks时间段调用指定的函数handler
+// handler的调用需要通过 trap.c 的中断处理回到用户态执行。内核态不能执行任何与用户态相关的代码，保障隔离性
 uint64
 sys_sigalarm(void)
 {

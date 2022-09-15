@@ -133,6 +133,13 @@ found:
     return 0;
   }
 
+  // lab 4-3
+  if ((p->alarmframe = (struct trapframe *)kalloc()) == 0) {
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
   // lab 3-1
   // Allocate a usyscall page.
   if ((p->usyscall = (struct usyscall *)kalloc()) == 0) {
@@ -165,6 +172,7 @@ found:
   p->alarm_tks = 0;
   p->alarm_handler = 0;
   p->alarm_tk_elapsed = 0;
+  p->alarm_state = 0;
 
   return p;
 }
@@ -178,6 +186,11 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+
+  // lab 4-3
+  if (p->alarmframe)
+    kfree((void*)p->alarmframe);
+  p->alarmframe = 0;
 
   // lab 3-1
   if (p->usyscall)
@@ -203,6 +216,7 @@ freeproc(struct proc *p)
   p->alarm_tks = 0;
   p->alarm_handler = 0;
   p->alarm_tk_elapsed = 0;
+  p->alarm_state = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
