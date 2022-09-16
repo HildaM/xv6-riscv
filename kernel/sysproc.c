@@ -37,16 +37,29 @@ sys_wait(void)
   return wait(p);
 }
 
+
+// uint64
+// sys_sbrk(void)
+// {
+//   uint64 addr;
+//   int n;
+
+//   argint(0, &n);
+//   addr = myproc()->sz;
+//   if(growproc(n) < 0)
+//     return -1;
+//   return addr;
+// }
+
+// lecture 08 课堂测试代码
 uint64
 sys_sbrk(void)
 {
   uint64 addr;
   int n;
-
-  argint(0, &n);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+  argint(0, &n);
+  myproc()->sz += n;
   return addr;
 }
 
