@@ -37,31 +37,34 @@ sys_wait(void)
   return wait(p);
 }
 
-
-// uint64
-// sys_sbrk(void)
-// {
-//   uint64 addr;
-//   int n;
-
-//   argint(0, &n);
-//   addr = myproc()->sz;
-//   if(growproc(n) < 0)
-//     return -1;
-//   return addr;
-// }
-
-// lecture 08 课堂测试代码
+// before lecture 08 ---- Eager Allocation
 uint64
 sys_sbrk(void)
 {
   uint64 addr;
   int n;
-  addr = myproc()->sz;
+
   argint(0, &n);
-  myproc()->sz += n;
+  addr = myproc()->sz;
+  if(growproc(n) < 0)
+    return -1;
   return addr;
 }
+
+// lecture 08 ---- Lazy Allocation
+// 不要在 lab 05 中使用！！！
+// uint64
+// sys_sbrk(void)
+// {
+//   uint64 addr;
+//   int n;
+//   addr = myproc()->sz;
+
+//   argint(0, &n);
+//   myproc()->sz += n;  // 仅仅修改了sz的值，并没有实际申请内存
+
+//   return addr;
+// }
 
 uint64
 sys_sleep(void)
