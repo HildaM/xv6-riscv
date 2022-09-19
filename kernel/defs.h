@@ -66,6 +66,11 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
 uint64          free_mem(void);
+void            refcnt_inc(void *pa);
+void            refcnt_dec(void *pa);
+extern          int pg_refcnt[];
+extern          struct spinlock refcnt_lock;
+
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -181,7 +186,9 @@ int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 // lab 3-2
 void            vmprint(pagetable_t pagetable);
-
+// lab 5-1
+int             uncopied_cow(pagetable_t page, uint64 va);
+int             cowalloc(pagetable_t page, uint64 va);
 
 
 

@@ -305,8 +305,10 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 // physical memory.
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
+
+// True Allocate Memory
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+uvmcopy2(pagetable_t old, pagetable_t new, uint64 sz)
 {
   pte_t *pte;
   uint64 pa, i;
@@ -318,8 +320,10 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: pte should exist");
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
+
     pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte);
+    flags = PTE_FLAGS(*pte) | PTE_W;  // 增加写权限
+
     if((mem = kalloc()) == 0)
       goto err;
     memmove(mem, (char*)pa, PGSIZE);
@@ -327,6 +331,41 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       kfree(mem);
       goto err;
     }
+  }
+  return 0;
+
+ err:
+  uvmunmap(new, 0, i / PGSIZE, 1);
+  return -1;
+}
+
+
+int
+uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+{
+  pte_t *pte;
+  uint64 pa, i;
+  uint flags;
+
+  for(i = 0; i < sz; i += PGSIZE){
+    if((pte = walk(old, i, 0)) == 0)
+      panic("uvmcopy: pte should exist");
+    if((*pte & PTE_V) == 0)
+      panic("uvmcopy: page not present");
+
+    pa = PTE2PA(*pte);
+    
+    *pte &= (~PTE_W);   // 清除PTE_W
+    *pte |= PTE_C;      // 标记当前的pte为 COW pte
+    flags = PTE_FLAGS(*pte);
+
+    // 将old的页表映射到new中
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags) != 0){
+      printf("uvmcopy failed\n");
+      goto err;
+    }
+
+    refcnt_inc((void*)pa);   // pte引用自增
   }
   return 0;
 
@@ -358,6 +397,13 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
+    if (uncopied_cow(pagetable, va0)) {
+      // 如果当前页是COW页，则新建一个页
+      if (cowalloc(pagetable, va0) < 0) {
+        return -1;
+      }
+    }
+
     pa0 = walkaddr(pagetable, va0);   // 输入虚拟地址与对应的页表，返回对应的物理地址
     if(pa0 == 0)
       return -1;
@@ -484,4 +530,52 @@ vmprint(pagetable_t pagetable)
   print_pages(pagetable, 1);
 }
 
- 
+// lab 5-1 判断当前页是否是 COW 页
+int
+uncopied_cow(pagetable_t page, uint64 va)
+{
+  if (va >= MAXVA) 
+    return 0;
+
+  pte_t *pte = walk(page, va, 0);
+  if (pte == 0)
+    return 0;
+  if ((*pte & PTE_V) == 0)  // Not valid
+    return 0;
+  if ((*pte & PTE_U) == 0)  // User can't access
+    return 0;
+
+  return ((*pte) & PTE_C);
+}
+
+// lab 5-1 处理COW页面申请
+int
+cowalloc(pagetable_t page, uint64 va)
+{
+  pte_t *pte = walk(page, va, 0);
+  if (pte == 0) return -1;
+
+  uint64 prev_sta = PTE2PA(*pte); // 这里的 prev_sta 就是这个页帧原来使用的父进程的页表
+                                  // 这里写 sta 是因为这个地址是和页帧对齐的（page-aligned）
+                                  // 所以写个 sta 表示一个页帧的开始
+  uint64 newPage = (uint64)kalloc();
+  if (!newPage) return -1;
+
+  uint64 va_sta = PGROUNDDOWN(va);  // 当前页帧
+
+  // 修改权限
+  uint64 perm = PTE_FLAGS(*pte);
+  perm &= (~PTE_C);   // 去除COW标记
+  perm |= PTE_W;
+
+  memmove((void*)newPage, (void*)prev_sta, PGSIZE);   // 将父进程的页帧拷贝到newPage上
+  uvmunmap(page, va_sta, 1, 1);         // 取消对父进程页帧的引用
+
+  // 将newPage映射到子进程的page中
+  if (mappages(page, va_sta, PGSIZE, (uint64)newPage, perm) < 0) {
+    kfree((void*)newPage);
+    return -1;
+  }
+
+  return 0;
+}

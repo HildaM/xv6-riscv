@@ -354,9 +354,12 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define PTE_R (1L << 1) // Readable
 #define PTE_W (1L << 2) // Writable
 #define PTE_X (1L << 3) // Executable
-#define PTE_U (1L << 4) // user can access
-// lab 3-3
-#define PTE_A (1L << 6) // Accessed flag
+#define PTE_U (1L << 4) // User can access
+#define PTE_G (1L << 5) // Globel
+#define PTE_A (1L << 6) // Accessed (lab 3-1)
+#define PTE_D (1L << 7) // Dirty
+// lab 5-1 Self modify flags
+#define PTE_C (1L << 8) // COW page
 
 // shift a physical address to the right place for a PTE.
 #define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)

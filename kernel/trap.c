@@ -80,25 +80,11 @@ usertrap(void)
     syscall();
 
   }
-  else if (r_scause() == 15) {
-    // Page Fault
-    uint64 va = r_stval();  // Supervisor Trap Value 触发中断的地址
-    printf("page fault at va: %p\n", va);
-
-    uint64 ka = (uint64)kalloc();  // Allocate one 4096-byte page of physical memory.
-    if (ka == 0) {
-      // 申请内存失败
+  // Store / AMO page fault ----> 表示尝试往page写入并保存数据的时候触发的缺页异常
+  else if (r_scause() == 15 && uncopied_cow(p->pagetable, r_stval())) {
+    // printf("in cow\n");
+    if (cowalloc(p->pagetable, r_stval()) < 0) {
       p->killed = 1;
-    } else {
-      memset((void*)ka, 0, PGSIZE); // 将新申请的内存初始化为0
-      va = PGROUNDDOWN(va);         // 将进程地址空间指针指向低位置
-      // 将用户空间的地址映射到新申请的物理地址上去
-      if (mappages(p->pagetable, va, PGSIZE, ka, PTE_W | PTE_U | PTE_R) != 0) {
-        // 注意！设置的权限里面没有PTE_V，所以在回收内存的时候，uvmunmap(vm.c)会没有PTE_V标记的pte抛出异常，需要修改uvmunmap函数的逻辑才能正确执行程序
-          // 申请失败
-          kfree((void*)ka);
-          p->killed = 1;
-      }
     }
   }
   else if((which_dev = devintr()) != 0){
