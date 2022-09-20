@@ -189,6 +189,9 @@ void            vmprint(pagetable_t pagetable);
 // lab 5-1
 int             uncopied_cow(pagetable_t page, uint64 va);
 int             cowalloc(pagetable_t page, uint64 va);
+// lab 5-2
+int             lazy_allocate(uint64 va);
+int             is_lazy_addr(uint64 va);
 
 
 

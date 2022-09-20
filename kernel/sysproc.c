@@ -38,33 +38,43 @@ sys_wait(void)
 }
 
 // before lecture 08 ---- Eager Allocation
-uint64
-sys_sbrk(void)
-{
-  uint64 addr;
-  int n;
-
-  argint(0, &n);
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
-  return addr;
-}
-
-// lecture 08 ---- Lazy Allocation
-// 不要在 lab 05 中使用！！！
 // uint64
 // sys_sbrk(void)
 // {
 //   uint64 addr;
 //   int n;
-//   addr = myproc()->sz;
 
 //   argint(0, &n);
-//   myproc()->sz += n;  // 仅仅修改了sz的值，并没有实际申请内存
-
+//   addr = myproc()->sz;
+//   if(growproc(n) < 0)
+//     return -1;
 //   return addr;
 // }
+
+// lecture 08 ---- Lazy Allocation
+uint64
+sys_sbrk(void)
+{
+  struct proc *p = myproc();
+  uint64 addr = p->sz;
+  int n;
+
+  argint(0, &n);
+  // n小于0，需要真正地处理内存
+  if (n < 0) {
+    if (p->sz + n < 0) {  // 不能释放比自己大的空间！
+      return -1;
+    }
+    if (growproc(n) < 0) {
+      printf("sys_sbrk: growproc error\n");
+      return -1;
+    }
+  } else {
+    p->sz += n;
+  }
+
+  return addr;
+}
 
 uint64
 sys_sleep(void)

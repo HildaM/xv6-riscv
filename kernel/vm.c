@@ -5,6 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -114,6 +116,9 @@ walkaddr(pagetable_t pagetable, uint64 va)
   if(va >= MAXVA)
     return 0;
 
+  if (is_lazy_addr(va))
+    lazy_allocate(va);
+
   pte = walk(pagetable, va, 0);
   if(pte == 0)
     return 0;
@@ -178,7 +183,8 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
     if((pte = walk(pagetable, a, 0)) == 0)
-      panic("uvmunmap: walk");
+      // panic("uvmunmap: walk"); 释放进程的时候会用到 uvmunmap，但是有可能释放的时候这个页根本就没实际被分配
+      continue;
     if((*pte & PTE_V) == 0) {
        // panic("uvmunmap: not mapped");
        continue;
@@ -309,9 +315,11 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
-      panic("uvmcopy: pte should exist");
+      // panic("uvmcopy: pte should exist");
+      continue;
     if((*pte & PTE_V) == 0)
-      panic("uvmcopy: page not present");
+      // panic("uvmcopy: page not present");
+      continue;
 
     pa = PTE2PA(*pte);
     
@@ -358,7 +366,6 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
     if (uncopied_cow(pagetable, va0)) {
-      // 如果当前页是COW页，则新建一个页
       if (cowalloc(pagetable, va0) < 0) {
         return -1;
       }
@@ -389,6 +396,12 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);
+    if (uncopied_cow(pagetable, va0)) {
+      if (cowalloc(pagetable, va0) < 0) {
+        return -1;
+      }
+    }
+
     pa0 = walkaddr(pagetable, va0);
     if(pa0 == 0)
       return -1;
@@ -416,6 +429,12 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
   while(got_null == 0 && max > 0){
     va0 = PGROUNDDOWN(srcva);
+    if (uncopied_cow(pagetable, va0)) {
+      if (cowalloc(pagetable, va0) < 0) {
+        return -1;
+      }
+    }
+
     pa0 = walkaddr(pagetable, va0);
     if(pa0 == 0)
       return -1;
@@ -538,4 +557,50 @@ cowalloc(pagetable_t page, uint64 va)
   }
 
   return 0;
+}
+
+// lab 5-2 Lazy Allocation
+int
+lazy_allocate(uint64 va)
+{
+  uint64* mem = kalloc();    // 申请内存
+
+  if (mem == 0) {
+    return -1;
+  } else {
+    struct proc *p = myproc();
+    
+    memset(mem, 0, PGSIZE);  // 初始化内存
+    uint64 va_sta = PGROUNDDOWN(va);  // 获取va的页开始地址（低地址）
+    // 进行映射
+    if (mappages(p->pagetable, va_sta, PGSIZE, (uint64)mem, PTE_R | PTE_W | PTE_X | PTE_U) != 0) {
+      kfree((void*)mem);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+int
+is_lazy_addr(uint64 va)
+{
+  struct proc *p = myproc();
+  if (va < PGROUNDDOWN(p->trapframe->sp) && va >= PGROUNDDOWN(va) - PGSIZE) {
+    // 防止va在guard page范围内
+    // 这里使用了用户栈的栈指针 sp 来判断用户栈的虚拟地址
+    // 因为用户栈的下面就是保护页，所以把 
+    // PGROUNDDOWN(p->trapframe->sp) 当作保护页的上界
+    return 0;
+  }
+
+  if (va > MAXVA) return 0;
+
+  pte_t *pte = walk(p->pagetable, va, 0);
+  if (pte && (*pte & PTE_V)) // 如果一个页有PTE_V标记，那么必然是被分配过的，不可能是懒分配
+    return 0;  
+
+  if (va >= p->sz) return 0;  // 越过限定的内存地址
+
+  return 1;
 }

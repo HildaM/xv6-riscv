@@ -80,12 +80,24 @@ usertrap(void)
     syscall();
 
   }
-  // Store / AMO page fault ----> 表示尝试往page写入并保存数据的时候触发的缺页异常
-  else if (r_scause() == 15 && uncopied_cow(p->pagetable, r_stval())) {
-    // printf("in cow\n");
-    if (cowalloc(p->pagetable, r_stval()) < 0) {
-      p->killed = 1;
+  else if (r_scause() == 13 || r_scause() == 15) {
+    // 获取触发中断的地址
+    uint64 va = r_stval();
+
+    // Load Page Fault or Store Page fault, but the page isn't COW page
+    if (is_lazy_addr(va)) {
+      if (lazy_allocate(va) < 0) {
+        p->killed = 1;
+      }
     }
+    // Store / AMO page fault ----> 表示尝试往page写入并保存数据的时候触发的缺页异常
+    else if (r_scause() == 15 && uncopied_cow(p->pagetable, va)) {
+      // printf("in cow\n");
+      if (cowalloc(p->pagetable, va) < 0) {
+        p->killed = 1;
+      }
+    }
+    
   }
   else if((which_dev = devintr()) != 0){
     // ok
@@ -95,7 +107,7 @@ usertrap(void)
     setkilled(p);
   }
 
-  // 再次检测当前进程是否被杀掉
+  // 检测当前进程是否标记为killed
   if(killed(p))
     exit(-1);
 
