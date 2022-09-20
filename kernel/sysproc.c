@@ -73,7 +73,7 @@ sys_sleep(void)
   uint ticks0;
 
   // lab 4-2
-  backtrace();
+  // backtrace();
 
   argint(0, &n);
   acquire(&tickslock);

@@ -9,14 +9,17 @@
 #include "riscv.h"
 #include "defs.h"
 
-#define PG2REFIDX(_pa) (((_pa) - KERNBASE) / PGSIZE)  // 获取下标
-#define MX_PGIDX PG2REFIDX(PHYSTOP)   // 获取最大下标
+// lab 5-1 COW
+/*************/
+#define PG2REFIDX(_pa) (((_pa) - KERNBASE) / PGSIZE)  // 获取指定物理地址的内存下标
+#define MX_PGIDX PG2REFIDX(PHYSTOP)                   // 获取内存最大下标
 
 int pg_refcnt[MX_PGIDX];  // 标记数组
 
-#define PG_REFCNT(_pa) pg_refcnt[PG2REFIDX((uint64)(_pa))]  // 宏定义
+#define PG_REFCNT(_pa) pg_refcnt[PG2REFIDX((uint64)(_pa))]  // 标记数组的宏定义（注意传参的数据格式）
 
-struct spinlock refcnt_lock;
+struct spinlock refcnt_lock;    // 需要为引用计数器上锁
+/*************/
 
 void freerange(void *pa_start, void *pa_end);
 
@@ -36,7 +39,7 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  initlock(&refcnt_lock, "ref cnt");
+  initlock(&refcnt_lock, "ref cnt");    // 初始化计数器锁
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -46,7 +49,10 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE) {
+    acquire(&refcnt_lock);
     PG_REFCNT(p) = 0;   // 将该pte置空
+    release(&refcnt_lock);
+
     kfree(p);
   }
 }
@@ -66,7 +72,7 @@ kfree(void *pa)
 
   // 首先减少记数，如果小于等于0则进行回收
   acquire(&refcnt_lock);
-  if (--PG_REFCNT(pa) <= 0) {
+  if (--PG_REFCNT(pa) <= 0) {   // 用物理地址索引数组
     // Fill with junk to catch dangling refs.
     memset(pa, 1, PGSIZE);
 
@@ -96,7 +102,10 @@ kalloc(void)
 
   if(r) {
     memset((char*)r, 5, PGSIZE); // fill with junk
+
+    acquire(&refcnt_lock);
     PG_REFCNT(r) = 1;   // 分配时总共有一个进程使用这个页帧，所以置为 1 。
+    release(&refcnt_lock);
   }
     
   return (void*)r;
@@ -107,17 +116,21 @@ kalloc(void)
 // 获取空闲的内存数量
 uint64
 free_mem(void) {
-  struct run *r = kmem.freelist;
   uint64 n = 0;
+
+  acquire(&kmem.lock);
+  struct run *r = kmem.freelist;
   while (r) {
     r = r->next;
     n++;
   }
+  release(&kmem.lock);
 
   return n * PGSIZE;
 }
 
 // lab 5-1
+// 引用增加
 void
 refcnt_inc(void* pa)
 {
@@ -126,6 +139,7 @@ refcnt_inc(void* pa)
   release(&refcnt_lock);
 }
 
+// 引用减少
 void
 refcnt_dec(void* pa)
 {

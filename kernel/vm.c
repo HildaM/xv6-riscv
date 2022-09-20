@@ -299,47 +299,7 @@ uvmfree(pagetable_t pagetable, uint64 sz)
   freewalk(pagetable);
 }
 
-// Given a parent process's page table, copy
-// its memory into a child's page table.
-// Copies both the page table and the
-// physical memory.
-// returns 0 on success, -1 on failure.
-// frees any allocated pages on failure.
-
-// True Allocate Memory
-int
-uvmcopy2(pagetable_t old, pagetable_t new, uint64 sz)
-{
-  pte_t *pte;
-  uint64 pa, i;
-  uint flags;
-  char *mem;
-
-  for(i = 0; i < sz; i += PGSIZE){
-    if((pte = walk(old, i, 0)) == 0)
-      panic("uvmcopy: pte should exist");
-    if((*pte & PTE_V) == 0)
-      panic("uvmcopy: page not present");
-
-    pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte) | PTE_W;  // 增加写权限
-
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
-      goto err;
-    }
-  }
-  return 0;
-
- err:
-  uvmunmap(new, 0, i / PGSIZE, 1);
-  return -1;
-}
-
-
+// Copy On Write
 int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
@@ -545,7 +505,7 @@ uncopied_cow(pagetable_t page, uint64 va)
   if ((*pte & PTE_U) == 0)  // User can't access
     return 0;
 
-  return ((*pte) & PTE_C);
+  return ((*pte) & PTE_C);  // Is it COW page ?
 }
 
 // lab 5-1 处理COW页面申请
@@ -566,7 +526,7 @@ cowalloc(pagetable_t page, uint64 va)
   // 修改权限
   uint64 perm = PTE_FLAGS(*pte);
   perm &= (~PTE_C);   // 去除COW标记
-  perm |= PTE_W;
+  perm |= PTE_W;      // 增加写权限
 
   memmove((void*)newPage, (void*)prev_sta, PGSIZE);   // 将父进程的页帧拷贝到newPage上
   uvmunmap(page, va_sta, 1, 1);         // 取消对父进程页帧的引用
